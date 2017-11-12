@@ -1,0 +1,83 @@
+---
+title: "Practical Machine Learning"
+author: "Balázs Srancsik"
+date: "12 November 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1st step: Install and Load packages
+
+In this step I am loading all necessary packages for the analysis
+```{r}
+library(caret)
+library(randomForest)
+library(ggplot2)
+library(rpart)
+library(rpart.plot)
+library(abind)
+library(arm)
+```
+
+
+## 2nd step: Acquiring the data
+
+As a next step I will load the 2 csv files in R
+```{r}
+trainUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+training <- read.csv(url(trainUrl), na.strings=c("#DIV/0!","","NA"))
+testing <- read.csv(url(testUrl), na.strings=c("#DIV/0!","","NA"))
+dim(training)
+dim(testing)
+set.seed(1234)
+```
+
+## 3rd step: Cleaning data
+
+Removing columns with empty cells and deleting irrelevant variable columns
+```{r}
+training<-training[,colSums(is.na(training)) == 0]
+testing <-testing[,colSums(is.na(testing)) == 0]
+training   <-training[,-c(1:7)]
+testing <-testing[,-c(1:7)]
+
+```
+
+## 4rd step: Creating 2 subsets of the data
+```{r}
+E <- createDataPartition(y=training$classe, p=0.75, list=FALSE)
+A <- training[E, ] 
+B <- training[-E, ]
+dim(training)
+dim(testing)
+
+```
+
+## 5th step: Models and Cross-Validation
+
+####Precition 1: With Decision tree
+```{r}
+model1 <- rpart(classe ~ ., data=A, method="class")
+prediction1 <- predict(model1, B, type = "class",na.action = na.pass)
+rpart.plot(model1, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+CM1 <- confusionMatrix(prediction1, B$classe)
+CM1overall.accuracy <- CM1$overall['Accuracy']
+CM1overall.accuracy
+```
+
+####Prediction 2: Random Forest
+```{r}
+model2 <- randomForest(classe ~. , data=A, method="class")
+prediction2 <- predict(model2, B, type = "class")
+CM2 <- confusionMatrix(prediction2, B$classe)
+CM2overall.accuracy <- CM2$overall['Accuracy']
+CM2overall.accuracy
+```
+
+## 6th step: Conclusion
+When comparing the 2 prediction method's accuracy, it is clearly visible that Random Forest is better predicting values.
+
